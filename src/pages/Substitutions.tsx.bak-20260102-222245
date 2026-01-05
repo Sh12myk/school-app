@@ -1,8 +1,0 @@
-export default function Substitutions() {
-  return (
-    <div>
-      <h1>Заміни</h1>
-      <p>Тут буде список замін на сьогодні/тиждень + фільтри.</p>
-    </div>
-  );
-}
