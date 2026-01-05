@@ -1,0 +1,215 @@
+import { useEffect, useMemo, useState } from "react";
+import type { Announcement } from "../types";
+import styles from "./Announcements.module.css";
+import CreateAnnouncementModal from "../components/announcements/CreateAnnouncementModal";
+import { useCurrentUser } from "../hooks/useCurrentUser";
+
+type Audience =
+  | { kind: "all" }
+  | { kind: "teachers" }
+  | { kind: "homeroom" }
+  | { kind: "class"; classId: string };
+
+type AnnWithAudience = Announcement & { audience?: Audience };
+
+const ITEMS_KEY = "schoolapp.announcements.items.v1";
+const ACK_KEY = "schoolapp.announcements.acked.v1";
+
+// тимчасові seed
+const SEED: AnnWithAudience[] = [
+  { id: "a1", type: "meeting", title: "Нарада о 14:30", requiresAck: true, audience: { kind: "teachers" } },
+  { id: "a2", type: "survey", title: "Пройти опитування до кінця дня", requiresAck: false, audience: { kind: "all" } },
+  { id: "a3", type: "admin", title: "Нагадування: подати журнали до 16:00", requiresAck: true, audience: { kind: "teachers" } },
+  { id: "a4", type: "critical", title: "Тривога: діяти за алгоритмом укриття", requiresAck: false, audience: { kind: "all" } },
+  { id: "a5", type: "info", title: "Класним: подати відсутніх до 09:30", requiresAck: false, audience: { kind: "homeroom" } },
+];
+
+type Filter = "all" | Announcement["type"];
+type ReadFilter = "all" | "unacked" | "acked";
+
+function typeLabel(t: Announcement["type"]) {
+  switch (t) {
+    case "critical": return "🚨 Терміново";
+    case "admin": return "🏫 Адміністрація";
+    case "meeting": return "👥 Нарада";
+    case "survey": return "📝 Опитування";
+    case "info": return "ℹ️ Інфо";
+    default: return String(t);
+  }
+}
+
+function loadItems(): AnnWithAudience[] {
+  try {
+    const raw = localStorage.getItem(ITEMS_KEY);
+    if (!raw) return SEED;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return SEED;
+    return parsed as AnnWithAudience[];
+  } catch {
+    return SEED;
+  }
+}
+
+function saveItems(items: AnnWithAudience[]) {
+  try { localStorage.setItem(ITEMS_KEY, JSON.stringify(items)); } catch {}
+}
+
+function loadAcked(): Set<string> {
+  try {
+    const raw = localStorage.getItem(ACK_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(arr as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveAcked(set: Set<string>) {
+  try { localStorage.setItem(ACK_KEY, JSON.stringify(Array.from(set))); } catch {}
+}
+
+function passesAudience(aud: Audience | undefined, roles: string[], homeroomClassId: string) {
+  if (!aud) return true;
+  if (aud.kind === "all") return true;
+  if (aud.kind === "teachers") return true;
+  if (aud.kind === "homeroom") return roles.includes("homeroom");
+  if (aud.kind === "class") return !!homeroomClassId && homeroomClassId === aud.classId;
+  return true;
+}
+
+export default function Announcements() {
+  const { roles, homeroomClassId } = useCurrentUser();
+
+  const [items, setItems] = useState<AnnWithAudience[]>([]);
+  const [typeFilter, setTypeFilter] = useState<Filter>("all");
+  const [readFilter, setReadFilter] = useState<ReadFilter>("all");
+  const [ackedIds, setAckedIds] = useState<Set<string>>(new Set());
+  const [openCreate, setOpenCreate] = useState(false);
+
+  useEffect(() => {
+    setItems(loadItems());
+    setAckedIds(loadAcked());
+  }, []);
+
+  useEffect(() => { saveItems(items); }, [items]);
+  useEffect(() => { saveAcked(ackedIds); }, [ackedIds]);
+
+  const isAdmin = roles.includes("admin");
+
+  const onAck = (id: string) => {
+    setAckedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+
+  const onCreate = (a: AnnWithAudience) => {
+    setItems((prev) => [a, ...prev]);
+  };
+
+  const visibleItems = useMemo(() => {
+    return items.filter((x) => passesAudience(x.audience, roles, homeroomClassId));
+  }, [items, roles, homeroomClassId]);
+
+  const filtered = useMemo(() => {
+    let arr = [...visibleItems];
+
+    if (typeFilter !== "all") arr = arr.filter((a) => a.type === typeFilter);
+
+    if (readFilter === "acked") arr = arr.filter((a) => ackedIds.has(a.id));
+    if (readFilter === "unacked") arr = arr.filter((a) => !ackedIds.has(a.id));
+
+    arr.sort((a, b) => Number(ackedIds.has(a.id)) - Number(ackedIds.has(b.id)));
+    return arr;
+  }, [visibleItems, typeFilter, readFilter, ackedIds]);
+
+  const total = visibleItems.length;
+  const unacked = visibleItems.filter((a) => !ackedIds.has(a.id)).length;
+
+  return (
+    <div>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Оголошення</h1>
+          <div className={styles.sub}>
+            Видимі: <b>{total}</b> · Непрочитані: <b>{unacked}</b>
+          </div>
+        </div>
+
+        <div className={styles.actionsTop}>
+          {isAdmin && (
+            <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => setOpenCreate(true)}>
+              + Створити
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.controls}>
+        {(["all", "critical", "admin", "meeting", "survey", "info"] as Filter[]).map((f) => (
+          <button
+            key={f}
+            className={f === typeFilter ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+            onClick={() => setTypeFilter(f)}
+          >
+            {f === "all" ? "🗂️ Всі" : typeLabel(f)}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.controls}>
+        {(["all", "unacked", "acked"] as ReadFilter[]).map((f) => (
+          <button
+            key={f}
+            className={f === readFilter ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+            onClick={() => setReadFilter(f)}
+          >
+            {f === "all" ? "Усі" : f === "unacked" ? "Непрочитані" : "Прочитані"}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.list}>
+        {filtered.map((a) => {
+          const acked = ackedIds.has(a.id);
+
+          return (
+            <div key={a.id} className={acked ? `${styles.card} ${styles.dim}` : styles.card}>
+              <div className={styles.top}>
+                <div>
+                  <div className={styles.h}>{a.title}</div>
+                  <div className={styles.meta}>{typeLabel(a.type)}</div>
+                </div>
+
+                <span className={styles.badge}>
+                  {a.requiresAck ? (acked ? "✅ Ознайомлено" : "Потрібно ack") : "Оголошення"}
+                </span>
+              </div>
+
+              {a.requiresAck && (
+                <div className={styles.actions}>
+                  {acked ? (
+                    <span className={styles.badge}>✅ Ознайомлено</span>
+                  ) : (
+                    <button className={styles.btn} onClick={() => onAck(a.id)}>
+                      Ознайомився
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <CreateAnnouncementModal
+        open={openCreate}
+        onClose={() => setOpenCreate(false)}
+        onCreate={onCreate}
+      />
+    </div>
+  );
+}

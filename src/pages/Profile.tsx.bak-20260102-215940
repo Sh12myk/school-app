@@ -1,0 +1,67 @@
+import { useEffect, useState } from "react";
+import styles from "./Profile.module.css";
+
+const ROLE_KEY = "schoolapp.user.role.v1";
+
+type Role = "teacher" | "homeroom_teacher" | "admin";
+
+function loadRole(): Role {
+  try {
+    const r = localStorage.getItem(ROLE_KEY) as Role | null;
+    return (r ?? "teacher");
+  } catch {
+    return "teacher";
+  }
+}
+
+function saveRole(role: Role) {
+  try {
+    localStorage.setItem(ROLE_KEY, role);
+  } catch {
+    // ignore
+  }
+}
+
+export default function Profile() {
+  const [role, setRole] = useState<Role>("teacher");
+
+  useEffect(() => {
+    setRole(loadRole());
+  }, []);
+
+  const onChange = (r: Role) => {
+    setRole(r);
+    saveRole(r);
+  };
+
+  return (
+    <div>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Профіль</h1>
+        <div className={styles.sub}>
+          Тимчасово: роль зберігається в localStorage (пізніше буде логін).
+        </div>
+      </div>
+
+      <div className={styles.card}>
+        <div className={styles.row}>
+          <div className={styles.label}>Роль</div>
+
+          <select
+            className={styles.select}
+            value={role}
+            onChange={(e) => onChange(e.target.value as Role)}
+          >
+            <option value="teacher">Вчитель</option>
+            <option value="homeroom_teacher">Класний керівник</option>
+            <option value="admin">Адміністрація</option>
+          </select>
+        </div>
+
+        <div className={styles.note}>
+          Якщо обрати “Адміністрація” — на сторінці “Оголошення” з’явиться кнопка “+ Створити”.
+        </div>
+      </div>
+    </div>
+  );
+}

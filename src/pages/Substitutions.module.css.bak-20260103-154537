@@ -1,0 +1,58 @@
+.header{ margin-bottom: 12px; display:flex; align-items:flex-end; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.title{ font-size: 34px; letter-spacing:-0.03em; margin: 6px 0 0; }
+.sub{ margin-top: 6px; color: var(--muted); font-size: 13px; }
+
+.controls{ display:flex; gap:8px; flex-wrap:wrap; margin: 10px 0 12px; }
+.chip{
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  padding: 8px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 750;
+  font-size: 13px;
+}
+.chip:hover{ background: rgba(255,255,255,.09); }
+.chipActive{
+  background: rgba(255,255,255,.14);
+  border-color: rgba(255,255,255,.22);
+}
+
+.row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.select{
+  padding: 9px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  outline:none;
+}
+
+.list{ display:flex; flex-direction:column; gap:10px; }
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+}
+.top{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.h{ font-weight: 900; }
+.meta{ color: var(--muted); font-size: 13px; margin-top: 4px; }
+.badge{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.empty{
+  color: var(--muted);
+  padding: 18px;
+  border: 1px dashed rgba(255,255,255,.18);
+  border-radius: var(--radius);
+}

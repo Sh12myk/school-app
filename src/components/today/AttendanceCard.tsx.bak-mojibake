@@ -1,0 +1,50 @@
+type Props = {
+  classId: string;
+  deadlineLabel: string; // "09:30"
+  submitted: boolean;
+  onOpenForm: () => void;
+  onMarkSubmitted: () => void;
+};
+
+export default function AttendanceCard({
+  classId,
+  deadlineLabel,
+  submitted,
+  onOpenForm,
+  onMarkSubmitted,
+}: Props) {
+  return (
+    <div className="card">
+      <div className="cardTitle">
+        <span aria-hidden>⏰</span>
+        <div>
+          <div style={{ fontWeight: 800 }}>Подати відсутніх</div>
+          <div className="muted" style={{ fontSize: 13 }}>
+            Дедлайн: {deadlineLabel}
+          </div>
+        </div>
+      </div>
+
+      <div className="row" style={{ marginBottom: 10 }}>
+        <span className="badge">
+          Клас: <b>{classId}</b>
+        </span>
+        <span className="badge">Google Form</span>
+      </div>
+
+      <div className="btnRow">
+        <button className="btn btnPrimary" onClick={onOpenForm}>
+          Подати ({classId})
+        </button>
+
+        {!submitted ? (
+          <button className="btn" onClick={onMarkSubmitted}>
+            Я вже подав
+          </button>
+        ) : (
+          <span className="badge">✅ Позначено як подано</span>
+        )}
+      </div>
+    </div>
+  );
+}

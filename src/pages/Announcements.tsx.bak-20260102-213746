@@ -1,0 +1,8 @@
+export default function Announcements() {
+  return (
+    <div>
+      <h1>Оголошення</h1>
+      <p>Тут буде стрічка оголошень, фільтри та підтвердження (ack).</p>
+    </div>
+  );
+}

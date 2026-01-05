@@ -1,0 +1,84 @@
+.overlay{
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.55);
+  display:flex; align-items:center; justify-content:center;
+  padding: 18px;
+  z-index: 50;
+}
+.modal{
+  width: min(560px, 100%);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.title{ font-weight: 950; letter-spacing:-.02em; }
+.close{
+  border: 1px solid var(--border);
+  background: transparent;
+  color: rgba(255,255,255,.88);
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 13px;
+}
+.body{ padding: 14px; display:flex; flex-direction:column; gap:12px; }
+.row{ display:flex; gap:10px; flex-wrap:wrap; }
+.field{ display:flex; flex-direction:column; gap:6px; flex:1; min-width: 180px; }
+label{ font-size: 13px; color: var(--muted); }
+.input,.select{
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  outline:none;
+}
+.helper{ font-size: 12px; color: var(--muted); }
+.actions{ display:flex; gap:10px; justify-content:flex-end; margin-top: 4px; }
+.btn{
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor:pointer;
+  font-weight: 850;
+}
+.btnPrimary{
+  background: rgba(255,255,255,.16);
+  border-color: rgba(255,255,255,.22);
+}
+
+.pickerBtn{
+  width: 100%;
+  text-align: left;
+
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.pickerBtn:hover{ background: rgba(255,255,255,.10); }
+
+.pickerBtn:focus{
+  outline: none;
+  border-color: rgba(110,168,255,.55);
+  box-shadow: 0 0 0 3px rgba(110,168,255,.18);
+}
+
+.btnDisabled{ opacity:.5; cursor:not-allowed; }
+.close:hover{ background: rgba(0,0,0,.06); }
+@media (prefers-color-scheme: dark){ .close:hover{ background: rgba(255,255,255,.08); } }

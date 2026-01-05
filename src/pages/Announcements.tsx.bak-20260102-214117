@@ -1,0 +1,149 @@
+import { useEffect, useMemo, useState } from "react";
+import type { Announcement } from ""../types"";
+import styles from ""./Announcements.module.css"";
+
+// тимчасові mock-оголошення (потім з Firebase)
+const MOCK: Announcement[] = [
+  { id: ""a1"", type: ""meeting"", title: ""Нарада о 14:30"", requiresAck: true },
+  { id: ""a2"", type: ""survey"", title: ""Пройти опитування до кінця дня"", requiresAck: false },
+  { id: ""a3"", type: ""admin"", title: ""Нагадування: подати журнали до 16:00"", requiresAck: true },
+  { id: ""a4"", type: ""critical"", title: ""Тривога: діяти за алгоритмом укриття"", requiresAck: false },
+];
+
+type Filter = ""all"" | Announcement[""type""];
+type ReadFilter = ""all"" | ""unacked"" | ""acked"";
+
+function typeLabel(t: Announcement[""type""]) {
+  switch (t) {
+    case ""critical"": return ""🚨 Терміново"";
+    case ""admin"": return ""🏫 Адміністрація"";
+    case ""meeting"": return ""👥 Нарада"";
+    case ""survey"": return ""📝 Опитування"";
+    case ""info"": return ""ℹ️ Інфо"";
+    default: return String(t);
+  }
+}
+
+const ACK_KEY = ""schoolapp.announcements.acked.v1"";
+
+export default function Announcements() {
+  const [items, setItems] = useState<Announcement[]>([]);
+  const [typeFilter, setTypeFilter] = useState<Filter>(""all"");
+  const [readFilter, setReadFilter] = useState<ReadFilter>(""all"");
+  const [ackedIds, setAckedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setItems(MOCK);
+
+    try {
+      const raw = localStorage.getItem(ACK_KEY);
+      if (raw) {
+        const arr: string[] = JSON.parse(raw);
+        setAckedIds(new Set(arr));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACK_KEY, JSON.stringify(Array.from(ackedIds)));
+    } catch {
+      // ignore
+    }
+  }, [ackedIds]);
+
+  const onAck = (id: string) => {
+    setAckedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+
+  const filtered = useMemo(() => {
+    let arr = [...items];
+
+    if (typeFilter !== ""all"") arr = arr.filter((a) => a.type === typeFilter);
+
+    if (readFilter === ""acked"") arr = arr.filter((a) => ackedIds.has(a.id));
+    if (readFilter === ""unacked"") arr = arr.filter((a) => !ackedIds.has(a.id));
+
+    // спочатку не-acked, потім acked
+    arr.sort((a, b) => Number(ackedIds.has(a.id)) - Number(ackedIds.has(b.id)));
+    return arr;
+  }, [items, typeFilter, readFilter, ackedIds]);
+
+  const total = items.length;
+  const unacked = items.filter((a) => !ackedIds.has(a.id)).length;
+
+  return (
+    <div>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Оголошення</h1>
+          <div className={styles.sub}>
+            Всього: <b>{total}</b> · Непрочитані: <b>{unacked}</b>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.controls}>
+        {([""all"", ""critical"", ""admin"", ""meeting"", ""survey"", ""info""] as Filter[]).map((f) => (
+          <button
+            key={f}
+            className={f === typeFilter ? ${styles.chip}  : styles.chip}
+            onClick={() => setTypeFilter(f)}
+          >
+            {f === ""all"" ? ""🗂️ Всі"" : typeLabel(f)}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.controls}>
+        {([""all"", ""unacked"", ""acked""] as ReadFilter[]).map((f) => (
+          <button
+            key={f}
+            className={f === readFilter ? ${styles.chip}  : styles.chip}
+            onClick={() => setReadFilter(f)}
+          >
+            {f === ""all"" ? ""Усі"" : f === ""unacked"" ? ""Непрочитані"" : ""Прочитані""}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.list}>
+        {filtered.map((a) => {
+          const acked = ackedIds.has(a.id);
+          return (
+            <div key={a.id} className={acked ? ${styles.card}  : styles.card}>
+              <div className={styles.top}>
+                <div>
+                  <div className={styles.h}>{a.title}</div>
+                  <div className={styles.meta}>{typeLabel(a.type)}</div>
+                </div>
+
+                <span className={styles.badge}>
+                  {a.requiresAck ? (acked ? ""✅ Ознайомлено"" : ""Потрібно ack"") : ""Оголошення""}
+                </span>
+              </div>
+
+              {a.requiresAck && (
+                <div className={styles.actions}>
+                  {acked ? (
+                    <span className={styles.badge}>✅ Ознайомлено</span>
+                  ) : (
+                    <button className={${styles.btn} } onClick={() => onAck(a.id)}>
+                      Ознайомився
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

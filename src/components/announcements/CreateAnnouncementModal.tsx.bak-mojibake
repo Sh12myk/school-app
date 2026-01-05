@@ -1,0 +1,166 @@
+import { useEffect, useState } from "react";
+import type { Announcement } from "../../types";
+import styles from "./CreateAnnouncementModal.module.css";
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onCreate: (a: Announcement & { audience?: Audience }) => void;
+};
+
+type AnnType = Announcement["type"];
+type Audience =
+  | { kind: "all" }
+  | { kind: "teachers" }
+  | { kind: "homeroom" }
+  | { kind: "class"; classId: string };
+
+const CLASS_LETTERS = ["А", "Б", "В", "Г"] as const;
+const CLASSES: string[] = Array.from({ length: 11 }, (_, i) => i + 1)
+  .flatMap((g) => CLASS_LETTERS.map((l) => `${g}-${l}`));
+
+function uid() {
+  return "a_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+}
+
+export default function CreateAnnouncementModal({ open, onClose, onCreate }: Props) {
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState<AnnType>("info" as AnnType);
+  const [requiresAck, setRequiresAck] = useState(false);
+
+  const [audKind, setAudKind] = useState<Audience["kind"]>("all");
+  const [audClassId, setAudClassId] = useState<string>("");
+
+  useEffect(() => {
+    if (!open) return;
+    setTitle("");
+    setType(("info" as AnnType));
+    setRequiresAck(false);
+    setAudKind("all");
+    setAudClassId("");
+  }, [open]);
+
+  // ⚠️ ВАЖЛИВО: не викликаємо жодних хуків умовно. Тому ранній return — ОК,
+  // але після нього не має бути useMemo/useEffect/useState тощо.
+  if (!open) return null;
+
+  const canSave = title.trim().length >= 3;
+
+  const audience: Audience =
+    audKind === "class"
+      ? { kind: "class", classId: audClassId || "" }
+      : { kind: audKind };
+
+  const audienceValid = audKind !== "class" || (audClassId && audClassId.length >= 2);
+
+  const handleCreate = () => {
+    if (!canSave) return;
+    if (!audienceValid) return;
+
+    onCreate({
+      id: uid(),
+      title: title.trim(),
+      type,
+      requiresAck,
+      audience,
+    });
+
+    onClose();
+  };
+
+  return (
+    <div className={styles.overlay} role="dialog" aria-modal="true">
+      <div className={styles.modal}>
+        <div className={styles.head}>
+          <div className={styles.title}>➕ Створити оголошення</div>
+          <button className={styles.close} onClick={onClose}>✕</button>
+        </div>
+
+        <div className={styles.body}>
+          <div className={styles.field}>
+            <label>Заголовок</label>
+            <input
+              className={styles.input}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Наприклад: Нарада о 14:30"
+            />
+          </div>
+
+          <div className={styles.row}>
+            <div className={`${styles.field} ${styles.flex1}`}>
+              <label>Тип</label>
+              <select
+                className={styles.select}
+                value={String(type)}
+                onChange={(e) => setType(e.target.value as AnnType)}
+              >
+                <option value="info">ℹ️ Інфо</option>
+                <option value="admin">🏫 Адміністрація</option>
+                <option value="meeting">👥 Нарада</option>
+                <option value="survey">📝 Опитування</option>
+                <option value="critical">🚨 Терміново</option>
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label>&nbsp;</label>
+              <label className={styles.checkbox}>
+                <input
+                  type="checkbox"
+                  checked={requiresAck}
+                  onChange={(e) => setRequiresAck(e.target.checked)}
+                />
+                Потрібно ack
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label>Кому показати</label>
+            <select
+              className={styles.select}
+              value={audKind}
+              onChange={(e) => setAudKind(e.target.value as Audience["kind"])}
+            >
+              <option value="all">👥 Усім</option>
+              <option value="teachers">👩‍🏫 Усі вчителі</option>
+              <option value="homeroom">🧑‍💼 Тільки класні керівники</option>
+              <option value="class">🏷️ Конкретний клас</option>
+            </select>
+            <div className={styles.helper}>
+              Пізніше додамо групи/кафедри/паралелі — зараз базова сегментація.
+            </div>
+          </div>
+
+          {audKind === "class" && (
+            <div className={styles.field}>
+              <label>Клас</label>
+              <select
+                className={styles.select}
+                value={audClassId}
+                onChange={(e) => setAudClassId(e.target.value)}
+              >
+                <option value="">— обрати —</option>
+                {CLASSES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div className={styles.actions}>
+            <button className={styles.btn} onClick={onClose}>Скасувати</button>
+            <button
+              className={`${styles.btn} ${styles.btnPrimary} ${(canSave && audienceValid) ? "" : styles.btnDisabled}`}
+              onClick={handleCreate}
+              disabled={!(canSave && audienceValid)}
+            >
+              Створити
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

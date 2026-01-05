@@ -1,0 +1,116 @@
+.overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  z-index: 50;
+}
+
+.modal{
+  width: min(420px, 100%);
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.55);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+}
+
+.head{
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  gap:12px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+
+.title{
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.close{
+  appearance:none;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.88);
+  border-radius: 12px;
+  padding: 8px 10px;
+  cursor:pointer;
+}
+
+.close:hover{ background: rgba(255,255,255,.12); }
+
+.body{
+  padding: 14px;
+  display:flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field label{
+  display:block;
+  color: rgba(255,255,255,.72);
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.input, .select{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.92);
+  outline: none;
+}
+
+.input:focus, .select:focus{
+  border-color: rgba(49,198,255,.45);
+}
+
+.row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap: wrap;
+}
+
+.checkbox{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  color: rgba(255,255,255,.85);
+  font-size: 14px;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  padding-top: 6px;
+}
+
+.btn{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: rgba(255,255,255,.92);
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 750;
+  cursor:pointer;
+}
+
+.btn:hover{ background: rgba(255,255,255,.12); }
+
+.btnPrimary{
+  border:none;
+  background: linear-gradient(135deg, var(--primaryA), var(--primaryB));
+  color:white;
+}
+.flex1{ flex: 1; }
+.btnDisabled{ opacity: .6; cursor: not-allowed; }

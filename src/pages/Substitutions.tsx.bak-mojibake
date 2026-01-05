@@ -1,0 +1,164 @@
+import { useEffect, useMemo, useState } from "react";
+import type { Substitution } from "../types";
+import styles from "./Substitutions.module.css";
+import { useCurrentUser } from "../hooks/useCurrentUser";
+
+type Filter = "all" | "myHomeroom" | "class";
+
+const ITEMS_KEY = "schoolapp.subs.items.v1";
+
+// seed (поки без Firebase)
+const SEED: Substitution[] = [
+  { lessonNumber: 1, classId: "7-Б", status: "replaced", toTeacherId: "u5" },
+  { lessonNumber: 3, classId: "6-А", status: "room_changed", room: "310" },
+  { lessonNumber: 5, classId: "7-Б", status: "replaced", toTeacherId: "u1" },
+  { lessonNumber: 6, classId: "9-В", status: "cancelled" },
+];
+
+const CLASS_LETTERS = ["А", "Б", "В", "Г"] as const;
+const CLASSES: string[] = Array.from({ length: 11 }, (_, i) => i + 1)
+  .flatMap((g) => CLASS_LETTERS.map((l) => `${g}-${l}`));
+
+function loadItems(): Substitution[] {
+  try {
+    const raw = localStorage.getItem(ITEMS_KEY);
+    if (!raw) return SEED;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return SEED;
+    return parsed as Substitution[];
+  } catch {
+    return SEED;
+  }
+}
+
+function saveItems(items: Substitution[]) {
+  try { localStorage.setItem(ITEMS_KEY, JSON.stringify(items)); } catch {}
+}
+
+function statusLabel(s: Substitution) {
+  if (s.status === "cancelled") return "❌ Скасовано";
+  if (s.status === "room_changed") return `🟡 Кабінет → ${s.room ?? "?"}`;
+  if (s.status === "replaced") return `🔴 Заміна (вчитель → ${s.toTeacherId ?? "?"})`;
+  return String((s as any).status ?? "");
+}
+
+export default function Substitutions() {
+  const { roles, homeroomClassId } = useCurrentUser();
+
+  const [items, setItems] = useState<Substitution[]>([]);
+  const [filter, setFilter] = useState<Filter>("all");
+  const [classId, setClassId] = useState<string>("");
+
+  useEffect(() => {
+    const loaded = loadItems();
+    setItems(loaded);
+  }, []);
+
+  useEffect(() => {
+    saveItems(items);
+  }, [items]);
+
+  const canUseMyHomeroom = roles.includes("homeroom") && !!homeroomClassId;
+
+  // якщо вимкнули роль "homeroom" — не зависаємо на фільтрі
+  useEffect(() => {
+    if (filter === "myHomeroom" && !canUseMyHomeroom) setFilter("all");
+  }, [filter, canUseMyHomeroom]);
+
+  const visible = useMemo(() => {
+    let arr = [...items];
+
+    if (filter === "myHomeroom" && canUseMyHomeroom) {
+      arr = arr.filter((x) => x.classId === homeroomClassId);
+    }
+
+    if (filter === "class") {
+      if (classId) arr = arr.filter((x) => x.classId === classId);
+      else arr = [];
+    }
+
+    // сортуємо по уроку
+    arr.sort((a, b) => a.lessonNumber - b.lessonNumber);
+    return arr;
+  }, [items, filter, canUseMyHomeroom, homeroomClassId, classId]);
+
+  const total = items.length;
+  const totalMy = canUseMyHomeroom ? items.filter((x) => x.classId === homeroomClassId).length : 0;
+
+  return (
+    <div>
+      <div className={styles.header}>
+        <div>
+          <h1 className={styles.title}>Заміни</h1>
+          <div className={styles.sub}>
+            Сьогодні: <b>{total}</b>
+            {canUseMyHomeroom && (
+              <>
+                {" "}· Мій клас: <b>{totalMy}</b> ({homeroomClassId})
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.controls}>
+        <button
+          className={filter === "all" ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+          onClick={() => setFilter("all")}
+        >
+          🗂️ Всі
+        </button>
+
+        {canUseMyHomeroom && (
+          <button
+            className={filter === "myHomeroom" ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+            onClick={() => setFilter("myHomeroom")}
+          >
+            🧑‍💼 Мій клас ({homeroomClassId})
+          </button>
+        )}
+
+        <button
+          className={filter === "class" ? `${styles.chip} ${styles.chipActive}` : styles.chip}
+          onClick={() => setFilter("class")}
+        >
+          🏷️ Обрати клас
+        </button>
+      </div>
+
+      {filter === "class" && (
+        <div className={styles.row} style={{ marginBottom: 12 }}>
+          <select className={styles.select} value={classId} onChange={(e) => setClassId(e.target.value)}>
+            <option value="">— обрати —</option>
+            {CLASSES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className={styles.list}>
+        {visible.length === 0 ? (
+          <div className={styles.empty}>
+            Нічого немає для вибраного фільтра.
+          </div>
+        ) : (
+          visible.map((s) => (
+            <div key={`${s.classId}-${s.lessonNumber}-${s.status}`} className={styles.card}>
+              <div className={styles.top}>
+                <div>
+                  <div className={styles.h}>
+                    {s.lessonNumber} урок · {s.classId}
+                  </div>
+                  <div className={styles.meta}>{statusLabel(s)}</div>
+                </div>
+
+                <span className={styles.badge}>{s.status}</span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,35 @@
+.container{
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 18px 14px 40px;
+}
+
+.title{
+  font-size: 44px;
+  letter-spacing: -0.03em;
+  margin: 6px 0 16px;
+}
+
+.debug{
+  margin-bottom: 12px;
+  opacity: .7;
+}
+
+.page{
+  padding: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.title{
+  margin: 6px 0 12px;
+  font-size: 34px;
+  letter-spacing: -0.03em;
+}
+
+.subline{
+  margin: 10px 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}

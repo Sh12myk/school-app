@@ -1,0 +1,205 @@
+import { useEffect, useMemo, useState } from "react";
+import styles from "./Profile.module.css";
+
+type Role = "teacher" | "homeroom" | "admin";
+
+const ROLES_KEY = "schoolapp.user.roles.v1";
+const HOMEROOM_KEY = "schoolapp.user.homeroomClassId.v1";
+const TEACHER_ID_KEY = "schoolapp.user.teacherId.v1";
+
+// quick РєР»Р°СЃ-Р»РёСЃС‚ 1вЂ“11 + Рђ/Р‘/Р’/Р“
+const CLASS_LETTERS = ["Рђ", "Р‘", "Р’", "Р“"] as const;
+const CLASSES: string[] = Array.from({ length: 11 }, (_, i) => i + 1)
+  .flatMap((g) => CLASS_LETTERS.map((l) => `${g}-${l}`));
+
+function loadRoles(): Role[] {
+  try {
+    const raw = localStorage.getItem(ROLES_KEY);
+    if (!raw) return ["teacher"];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return ["teacher"];
+
+    const roles = parsed.filter((x) => x === "teacher" || x === "homeroom" || x === "admin") as Role[];
+    const set = new Set<Role>(roles);
+    set.add("teacher"); // teacher Р·Р°РІР¶РґРё
+    return Array.from(set);
+  } catch {
+    return ["teacher"];
+  }
+}
+
+function saveRoles(roles: Role[]) {
+  try {
+    localStorage.setItem(ROLES_KEY, JSON.stringify(roles));
+  } catch {
+    // ignore
+  }
+}
+
+function loadHomeroomClassId(): string {
+  try {
+    return localStorage.getItem(HOMEROOM_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function loadTeacherId(): string {
+  try {
+    return localStorage.getItem(TEACHER_ID_KEY) || "u1";
+  } catch {
+    return "u1";
+  }
+}
+
+function saveTeacherId(v: string) {
+  try {
+    localStorage.setItem(TEACHER_ID_KEY, v);
+  } catch {
+    // ignore
+  }
+} catch {
+    return "";
+  }
+}
+
+function saveHomeroomClassId(v: string) {
+  try {
+    localStorage.setItem(HOMEROOM_KEY, v);
+  } catch {
+    // ignore
+  }
+}
+
+function toggleRole(roles: Role[], role: Role): Role[] {
+  const set = new Set<Role>(roles);
+
+  if (role === "teacher") {
+    set.add("teacher");
+    return Array.from(set);
+  }
+
+  if (set.has(role)) set.delete(role);
+  else set.add(role);
+
+  set.add("teacher");
+  return Array.from(set);
+}
+
+export default function Profile() {
+  // вњ… РІР°Р¶Р»РёРІРѕ: Р±РµСЂРµРјРѕ РґР°РЅС– Р· localStorage РѕРґСЂР°Р·Сѓ РїСЂРё С–РЅС–С†С–Р°Р»С–Р·Р°С†С–С— (Р±РµР· "РјРёРіРѕС‚С–РЅРЅСЏ")
+  const [roles, setRoles] = useState<Role[]>(() => loadRoles());
+  const [homeroomClassId, setHomeroomClassId] = useState<string>(() => loadHomeroomClassId());
+  const [teacherId, setTeacherId] = useState<string>(() => loadTeacherId());
+
+  // вњ… СЏРєС‰Рѕ Р·РјС–РЅСЋС”РјРѕ СЂРѕР»СЊ/РєР»Р°СЃ РІ С–РЅС€С–Р№ РІРєР»Р°РґС†С– вЂ” РѕРЅРѕРІР»СЋС”РјРѕ С‚СѓС‚
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === ROLES_KEY) setRoles(loadRoles());
+      if (e.key === HOMEROOM_KEY) setHomeroomClassId(loadHomeroomClassId());
+      if (e.key === TEACHER_ID_KEY) setTeacherId(loadTeacherId());
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  const isHomeroom = roles.includes("homeroom");
+  const isAdmin = roles.includes("admin");
+
+  const rolesLabel = useMemo(() => {
+    const parts: string[] = [];
+    parts.push("Р’С‡РёС‚РµР»СЊ");
+    if (isHomeroom) parts.push("РљР»Р°СЃРЅРёР№ РєРµСЂС–РІРЅРёРє");
+    if (isAdmin) parts.push("РђРґРјС–РЅС–СЃС‚СЂР°С†С–СЏ");
+    return parts.join(" В· ");
+  }, [isHomeroom, isAdmin]);
+
+  const setRoleAndPersist = (role: Role) => {
+    const next = toggleRole(roles, role);
+    setRoles(next);
+    saveRoles(next);
+  };
+
+  const setClassAndPersist = (v: string) => {
+    setHomeroomClassId(v);
+    saveHomeroomClassId(v);
+  };
+
+  const homeroomSelectDisabled = !isHomeroom;
+
+  return (
+    <div>
+      <div className={styles.header}>
+        <h1 className={styles.title}>РџСЂРѕС„С–Р»СЊ</h1>
+        <div className={styles.sub}>
+          РџРѕС‚РѕС‡РЅС– СЂРѕР»С–: <b>{rolesLabel}</b>
+        </div>
+      </div>
+
+      <div className={styles.card}>
+        <div className={styles.sectionTitle}>Р РѕР»С–</div>
+
+        <div className={styles.grid}>
+          <label className={styles.check}>
+            <input type="checkbox" checked readOnly />
+            <div>
+              <div className={styles.checkLabel}>Р’С‡РёС‚РµР»СЊ</div>
+              <div className={styles.muted}>Р‘Р°Р·РѕРІР° СЂРѕР»СЊ. РЈСЂРѕРєРё/Р·Р°РјС–РЅРё Р·Р°РІР¶РґРё РґРѕСЃС‚СѓРїРЅС–.</div>
+            </div>
+          </label>
+
+          <label className={styles.check}>
+            <input
+              type="checkbox"
+              checked={isHomeroom}
+              onChange={() => setRoleAndPersist("homeroom")}
+            />
+            <div>
+              <div className={styles.checkLabel}>РљР»Р°СЃРЅРёР№ РєРµСЂС–РІРЅРёРє</div>
+              <div className={styles.muted}>Р”РѕРґР°С” Р±Р»РѕРє вЂњРџРѕРґР°С‚Рё РІС–РґСЃСѓС‚РЅС–С…вЂќ С– С„С–Р»СЊС‚СЂ вЂњРњС–Р№ РєР»Р°СЃвЂќ.</div>
+            </div>
+          </label>
+
+          <label className={styles.check}>
+            <input
+              type="checkbox"
+              checked={isAdmin}
+              onChange={() => setRoleAndPersist("admin")}
+            />
+            <div>
+              <div className={styles.checkLabel}>РђРґРјС–РЅС–СЃС‚СЂР°С†С–СЏ</div>
+              <div className={styles.muted}>Р”РѕСЃС‚СѓРї РґРѕ СЃС‚РІРѕСЂРµРЅРЅСЏ РѕРіРѕР»РѕС€РµРЅСЊ С‚Р° Р·РјС–РЅ СЂРѕР·РєР»Р°РґСѓ.</div>
+            </div>
+          </label>
+        </div>
+
+        <div className={styles.note}>
+          Р’С‡РёС‚РµР»СЊ РјРѕР¶Рµ РѕРґРЅРѕС‡Р°СЃРЅРѕ Р±СѓС‚Рё РєР»Р°СЃРЅРёРј РєРµСЂС–РІРЅРёРєРѕРј С–/Р°Р±Рѕ Р°РґРјС–РЅС–СЃС‚СЂР°С†С–С”СЋ вЂ” С†Рµ РЅРѕСЂРјР°Р»СЊРЅРѕ.
+        </div>
+      </div>
+
+      <div className={`${styles.card} ${homeroomSelectDisabled ? styles.disabled : ""}`}>
+        <div className={styles.sectionTitle}>РњС–Р№ РєР»Р°СЃ (РґР»СЏ РєР»Р°СЃРЅРѕРіРѕ РєРµСЂС–РІРЅРёРєР°)</div>
+
+        <div className={styles.row}>
+          <div>РљР»Р°СЃ</div>
+
+          <select
+            className={styles.select}
+            value={homeroomClassId}
+            onChange={(e) => setClassAndPersist(e.target.value)}
+          >
+            <option value="">вЂ” РѕР±СЂР°С‚Рё вЂ”</option>
+            {CLASSES.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.note}>
+          РЇРєС‰Рѕ СЂРѕР»СЊ вЂњРљР»Р°СЃРЅРёР№ РєРµСЂС–РІРЅРёРєвЂќ РІРёРјРєРЅРµРЅР° вЂ” С†РµР№ Р±Р»РѕРє РЅРµР°РєС‚РёРІРЅРёР№.
+        </div>
+      </div>
+    </div>
+  );
+}

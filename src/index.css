@@ -1,0 +1,109 @@
+:root{
+  --bg: #0b0f16;
+  --surface: rgba(255,255,255,.06);
+  --card: rgba(255, 255, 255, 0.096);
+  --border: rgba(255,255,255,.12);
+  --text: rgba(255,255,255,.92);
+  --muted: rgba(255,255,255,.66);
+
+  --radius: 16px;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+
+  --primary: #7c5cff;
+  --primary2: #31c6ff;
+  --danger: #ff4d6d;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(124,92,255,.30), transparent 60%),
+              radial-gradient(900px 500px at 90% 0%, rgba(49,198,255,.20), transparent 55%),
+              var(--bg);
+  color: var(--text);
+}
+
+.container{
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 18px 14px 40px;
+}
+
+.h1{
+  font-size: 44px;
+  letter-spacing: -0.03em;
+  margin: 6px 0 16px;
+}
+
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.cardTitle{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.muted{ color: var(--muted); }
+
+.row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.10);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.btnRow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+
+.btn{
+  appearance:none;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.08);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 650;
+  cursor:pointer;
+}
+
+.btn:hover{ background: rgba(255,255,255,.12); }
+
+.btnPrimary{
+  border: none;
+  background: linear-gradient(135deg, var(--primary), var(--primary2));
+  color: white;
+}
+
+.btnDanger{
+  border:none;
+  background: linear-gradient(135deg, var(--danger), #ffb703);
+  color: #130a0a;
+}
+.btnPrimary:hover{
+  filter: brightness(1.1);
+}
+.btnDanger:hover{
+  filter: brightness(1.1); }
+  
