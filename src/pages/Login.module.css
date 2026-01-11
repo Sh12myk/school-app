@@ -1,0 +1,23 @@
+.page{
+  padding: 16px;
+  max-width: 420px;
+}
+
+.title{
+  margin: 0 0 10px 0;
+}
+
+.error{
+  margin-bottom: 10px;
+  color: crimson;
+}
+
+.form{
+  display: grid;
+  gap: 8px;
+}
+
+.note{
+  opacity: .7;
+  font-size: 12px;
+}

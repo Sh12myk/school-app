@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Announcement, DayPhase, Lesson, LessonView, Substitution } from "../types";
-
+import { ENV } from "../lib/env";
 import styles from "./Today.module.css";
 
 import AttendanceCard from "../components/today/AttendanceCard";
@@ -152,7 +152,10 @@ export default function Today() {
           classId={homeroomClassId}
           deadlineLabel="09:30"
           submitted={attendanceSubmitted}
-          onOpenForm={() => alert("Тут буде перехід на Google Form")}
+          onOpenForm={() => {
+  if (!ENV.attendanceFormUrl) return alert("Немає посилання на форму (VITE_ATTENDANCE_FORM_URL).");
+  window.open(ENV.attendanceFormUrl, "_blank", "noopener,noreferrer");
+}}
           onMarkSubmitted={() => setAttendanceSubmitted(true)}
         />
       )}
