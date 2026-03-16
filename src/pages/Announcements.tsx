@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { AnnouncementItem, Audience, Announcement } from "../types";
+import type { Audience, Announcement } from "../types";
 import styles from "./Announcements.module.css";
 import CreateAnnouncementModal from "../components/announcements/CreateAnnouncementModal";
 import { useCurrentUser } from "../hooks/useCurrentUser";
@@ -35,7 +35,7 @@ export default function Announcements() {
   const { roles, homeroomClassId } = useCurrentUser();
 
   // store-backed state
-  const { value: items, setValue: setItems } = useStoreValue<AnnouncementItem[]>(
+  const { value: items, setValue: setItems } = useStoreValue<Announcement[]>(
     KEYS.announcements,
     SEED_ANNOUNCEMENTS
   );
@@ -58,7 +58,7 @@ export default function Announcements() {
     setAckedArr((prev) => (prev.includes(id) ? prev : [...prev, id]));
   };
 
-  const onCreate = (a: AnnouncementItem) => {
+  const onCreate = (a: Announcement) => {
     setItems((prev) => [a, ...prev]);
   };
 
