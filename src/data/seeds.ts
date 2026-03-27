@@ -1,4 +1,4 @@
-import type { AnnouncementItem, Lesson, Substitution, Teacher } from "../types";
+import type { Announcement, Lesson, Substitution, Teacher } from "../types";
 
 
 export const SEED_TEACHERS: Teacher[] = [
@@ -24,7 +24,7 @@ export const SEED_SUBS: Substitution[] = [
   { lessonNumber: 6, classId: "9-В", status: "cancelled" },
 ];
 
-export const SEED_ANNOUNCEMENTS: AnnouncementItem[] = [
+export const SEED_ANNOUNCEMENTS: Announcement[] = [
   { id: "a1", type: "meeting", title: "Нарада о 14:30", requiresAck: true, audience: { kind: "teachers" } },
   { id: "a2", type: "survey", title: "Пройти опитування до кінця дня", requiresAck: false, audience: { kind: "all" } },
   { id: "a3", type: "admin", title: "Нагадування: подати журнали до 16:00", requiresAck: true, audience: { kind: "teachers" } },
