@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDocPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function currentUserDoc() {
+      return get(userDocPath(request.auth.uid));
+    }
+
+    function currentUserRoles() {
+      return signedIn() && exists(userDocPath(request.auth.uid)) && currentUserDoc().data.roles is list
+        ? currentUserDoc().data.roles
+        : [];
+    }
+
+    function hasRole(role) {
+      return signedIn() && currentUserRoles().hasAny([role]);
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isOwnUser(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function validRoleList(roles) {
+      return roles is list
+        && roles.size() > 0
+        && roles.hasOnly(['teacher', 'homeroom', 'admin'])
+        && roles.hasAny(['teacher']);
+    }
+
+    function validAudience(aud) {
+      return !(aud is map)
+        || (
+          aud.keys().hasOnly(['kind', 'classId'])
+          && (
+            aud.kind == 'all'
+            || aud.kind == 'teachers'
+            || aud.kind == 'homeroom'
+            || (aud.kind == 'class' && aud.classId is string && aud.classId.size() > 0)
+          )
+        );
+    }
+
+    function validAnnouncement(data) {
+      return data.keys().hasOnly([
+          'title',
+          'type',
+          'requiresAck',
+          'audience',
+          'createdBy',
+          'createdAt'
+        ])
+        && data.title is string
+        && data.title.size() > 0
+        && data.title.size() <= 300
+        && data.type in ['critical', 'admin', 'meeting', 'survey', 'info']
+        && (!('requiresAck' in data) || data.requiresAck is bool)
+        && validAudience(data.audience)
+        && data.createdBy is string
+        && data.createdBy.size() > 0
+        && data.createdAt is timestamp;
+    }
+
+    function validSubstitution(data) {
+      return data.keys().hasOnly([
+          'classId',
+          'lessonNumber',
+          'status',
+          'room',
+          'toTeacherId',
+          'date',
+          'createdBy',
+          'createdAt'
+        ])
+        && data.classId is string
+        && data.classId.size() > 0
+        && data.lessonNumber is int
+        && data.lessonNumber >= 1
+        && data.lessonNumber <= 12
+        && data.status in ['cancelled', 'room_changed', 'replaced']
+        && data.date is string
+        && data.date.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.createdBy is string
+        && data.createdBy.size() > 0
+        && data.createdAt is timestamp
+        && (
+          (data.status == 'cancelled' && !('room' in data) && !('toTeacherId' in data))
+          || (data.status == 'room_changed' && data.room is string && data.room.size() > 0 && !('toTeacherId' in data))
+          || (data.status == 'replaced' && data.toTeacherId is string && data.toTeacherId.size() > 0)
+        );
+    }
+
+    // User profiles (users/{uid})
+    match /users/{uid} {
+      allow read: if signedIn();
+
+      // First profile bootstrap on first login (self only, no privilege escalation).
+      allow create: if isOwnUser(uid)
+        && request.resource.data.keys().hasOnly([
+          'uid', 'displayName', 'teacherId', 'roles', 'homeroomClassId', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.uid == uid
+        && request.resource.data.displayName is string
+        && request.resource.data.teacherId is string
+        && request.resource.data.roles is list
+        && request.resource.data.roles.size() == 1
+        && request.resource.data.roles[0] == 'teacher'
+        && (!('homeroomClassId' in request.resource.data) || request.resource.data.homeroomClassId is string)
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+
+      // User can update own basic fields, but not roles/uid. Admin can update any profile.
+      allow update: if (
+          isOwnUser(uid)
+          && request.resource.data.uid == resource.data.uid
+          && request.resource.data.roles == resource.data.roles
+          && request.resource.data.keys().hasOnly([
+            'uid', 'displayName', 'teacherId', 'roles', 'homeroomClassId', 'createdAt', 'updatedAt'
+          ])
+          && request.resource.data.displayName is string
+          && request.resource.data.teacherId is string
+          && (!('homeroomClassId' in request.resource.data) || request.resource.data.homeroomClassId is string)
+          && request.resource.data.updatedAt is timestamp
+        )
+        || isAdmin();
+
+      allow delete: if isAdmin();
+
+      // Acks per-user: users/{uid}/acks/{announcementId}
+      match /acks/{announcementId} {
+        allow read: if isOwnUser(uid) || isAdmin();
+        allow create, update: if isOwnUser(uid)
+          && request.resource.data.keys().hasOnly(['at'])
+          && request.resource.data.at is timestamp;
+        allow delete: if isOwnUser(uid) || isAdmin();
+      }
+    }
+
+    // Announcements (admin writes, authenticated reads)
+    match /announcements/{announcementId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() && validAnnouncement(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Substitutions (admin writes, authenticated reads)
+    match /substitutions/{subId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() && validSubstitution(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Deny everything else.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
