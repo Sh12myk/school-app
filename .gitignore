@@ -31,3 +31,7 @@ dist-ssr
 # Local backups
 *.bak
 *.bak-*
+
+# Firebase service account keys
+serviceAccountKey.json
+*serviceAccountKey*.json
